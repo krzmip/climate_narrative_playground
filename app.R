@@ -38,6 +38,25 @@ estimate_pi_to_file <- function(filename, ...){
     return(invisible(NULL))
 }
 
+produce_report <- function(all_inputs, settings, async = FALSE, sleep = 0) {
+  print(settings)
+  if (async) {
+    return(
+      promises::future_promise({
+        produce_report_(all_inputs, settings, sleep)
+      })
+    )
+  } else {
+    produce_report_(all_inputs, settings, sleep)
+    return(invisible(NULL))
+  }
+}
+
+produce_report_ <- function(all_inputs, settings, sleep){
+    Sys.sleep(sleep)
+    estimate_pi_to_file(settings$filename)
+}
+
 ui <- function(){
     fluidPage(
         title = "Climate narrative playground",
@@ -49,32 +68,35 @@ ui <- function(){
                 fluidPage(
                     h2("Title"),
                     p("This is a simple app to experiment with some shiny features"),
-                    actionButton("title_next", "next")
+                    hr(),
+                    #actionButton("title_next", "next")
+                    uiOutput("title_next_placeholder")
                 )
             ),
             tabPanel(
                 "main",
                 fluidPage(
                     h2("Main page"),
-                    p("version 0.1"),
+                    p("version 0.2"),
                     fluidRow(
                         checkboxInput("modal_flag", "Show modal message when busy", value = TRUE),
-                        textOutput("msg"),
+                        textOutput("msg")
                     ),
                     h3("Standard calculations"),
                     fluidRow(
                         actionButton("sleep", "Sys.sleep(10)"),
                         actionButton("alt_sleep", "alternative sleep for 10s"),
                         actionButton("est_pi", "Estimate pi"),
-                        actionButton("fest_pi", "Estimate pi,  output saved to file"),
-                        
+                        actionButton("f_est_pi", "Estimate pi,  output saved to file"),
+                        actionButton("ff_est_pi", "Estimate pi,  wrapped in functions")
                     ),
                     h3("Async calculations"),
                     fluidRow(
                         actionButton("async_sleep", "Sys.sleep(10)"),
                         actionButton("async_alt_sleep", "alternative sleep for 10s"),
                         actionButton("async_est_pi", "Estimate pi"),
-                        actionButton("async_fest_pi", "Estimate pi, output saved to file"),
+                        actionButton("async_f_est_pi", "Estimate pi, output saved to file"),
+                        actionButton("async_ff_est_pi", "Estimate pi, wrapped in functions")
                     ),
                     hr(),
                     fluidRow(
@@ -87,8 +109,15 @@ ui <- function(){
 }
 
 server <- function(input, output, session){
+    output$status <- renderText("...")
     plan(multisession)
     session$userData$temp_txt <- tempfile(fileext = ".txt")
+    output$title_next_placeholder <- renderUI({
+        actionButton("title_next", "next")
+    })
+    all_inputs <- reactive(
+        input[["sleep"]]
+    )
     observeEvent(
         input[["title_next"]],
         updateTabsetPanel(inputId = "wizard", selected = "main")
@@ -155,7 +184,7 @@ server <- function(input, output, session){
         }
     )
     observeEvent(
-        input[["fest_pi"]],
+        input[["f_est_pi"]],
         {
             if (input[["modal_flag"]]) {
                 showModal(
@@ -174,6 +203,25 @@ server <- function(input, output, session){
                 pi_msg
             )
             if (input[["modal_flag"]]) removeModal()
+        }
+    )
+    observeEvent(
+        input[["ff_est_pi"]],
+        {
+            settings <- list(filename=session$userData$temp_txt)
+            if (input[["modal_flag"]]) {
+                showModal(
+                    modalDialog(
+                        "Shiny is busy",
+                        title = "Message",
+                        footer = NULL
+                    )
+                )
+            }
+            produce_report(all_inputs(), settings)
+            if (input[["modal_flag"]]) removeModal()
+            result <- includeText(session$userData$temp_txt)
+            output$msg <- renderText(result)
         }
     )
     observeEvent(
@@ -241,7 +289,7 @@ server <- function(input, output, session){
         }
     )
     observeEvent(
-        input[["async_fest_pi"]],
+        input[["async_f_est_pi"]],
         {
             if (input[["modal_flag"]]) {
                 showModal(
@@ -262,6 +310,26 @@ server <- function(input, output, session){
                 output[["msg"]] <- renderText(
                     pi_msg
                 )
+            }
+        }
+    )
+    observeEvent(
+        input[["async_ff_est_pi"]],
+        {
+            settings <- list(filename=session$userData$temp_txt)
+            if (input[["modal_flag"]]) {
+                showModal(
+                    modalDialog(
+                        "Shiny is busy",
+                        title = "Message",
+                        footer = NULL
+                    )
+                )
+            }
+            produce_report(all_inputs(), settings, TRUE) %...>% {
+                if (input[["modal_flag"]]) removeModal()
+                result <- includeText(session$userData$temp_txt)
+                output$msg <- renderText(result)
             }
         }
     )
