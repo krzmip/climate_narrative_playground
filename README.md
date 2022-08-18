@@ -1,3 +1,3 @@
 # climate_narrative_playground
 
-This app is not intended to be used, its only purpose is investigative (to test some features without cluttering the main repo)
+The only purpose of this app is investigative (to test some features without cluttering the main repo), to be used only by developers.
