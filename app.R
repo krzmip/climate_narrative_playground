@@ -57,6 +57,16 @@ produce_report_ <- function(all_inputs, settings, sleep){
     estimate_pi_to_file(settings$filename)
 }
 
+show_the_modal <- function(){
+    showModal(
+        modalDialog(
+            "Shiny is busy",
+            title = "Message",
+            footer = NULL
+        )
+    )
+}
+
 ui <- function(){
     fluidPage(
         title = "Climate narrative playground",
@@ -77,7 +87,7 @@ ui <- function(){
                 "main",
                 fluidPage(
                     h2("Main page"),
-                    p("version 0.2"),
+                    p("version 0.21"),
                     fluidRow(
                         checkboxInput("modal_flag", "Show modal message when busy", value = TRUE),
                         textOutput("msg")
@@ -129,15 +139,7 @@ server <- function(input, output, session){
     observeEvent(
         input[["sleep"]],
         {
-            if (input[["modal_flag"]]) {
-                showModal(
-                    modalDialog(
-                        "Shiny is busy",
-                        title = "Message",
-                        footer = NULL
-                    )
-                )
-            }
+            if (input[["modal_flag"]]) show_the_modal()
             Sys.sleep(10)
             if (input[["modal_flag"]]) removeModal()
             output[["msg"]] <- renderText(
@@ -148,15 +150,7 @@ server <- function(input, output, session){
     observeEvent(
         input[["alt_sleep"]],
         {
-            if (input[["modal_flag"]]) {
-                showModal(
-                    modalDialog(
-                        "Shiny is busy",
-                        title = "Message",
-                        footer = NULL
-                    )
-                )
-            }
+            if (input[["modal_flag"]]) show_the_modal()
             alternative_sleep(10)
             if (input[["modal_flag"]]) removeModal()
             output[["msg"]] <- renderText(
@@ -167,15 +161,7 @@ server <- function(input, output, session){
     observeEvent(
         input[["est_pi"]],
         {
-            if (input[["modal_flag"]]) {
-                showModal(
-                    modalDialog(
-                        "Shiny is busy",
-                        title = "Message",
-                        footer = NULL
-                    )
-                )
-            }
+            if (input[["modal_flag"]]) show_the_modal()
             session$userData$pi_message <- estimate_pi()
             output[["msg"]] <- renderText(
                 session$userData$pi_message
@@ -186,15 +172,7 @@ server <- function(input, output, session){
     observeEvent(
         input[["f_est_pi"]],
         {
-            if (input[["modal_flag"]]) {
-                showModal(
-                    modalDialog(
-                        "Shiny is busy",
-                        title = "Message",
-                        footer = NULL
-                    )
-                )
-            }
+            if (input[["modal_flag"]]) show_the_modal()
             estimate_pi_to_file(session$userData$temp_txt)
             file_conn <- file(session$userData$temp_txt)
             pi_msg <- readLines(file_conn)
@@ -209,15 +187,7 @@ server <- function(input, output, session){
         input[["ff_est_pi"]],
         {
             settings <- list(filename=session$userData$temp_txt)
-            if (input[["modal_flag"]]) {
-                showModal(
-                    modalDialog(
-                        "Shiny is busy",
-                        title = "Message",
-                        footer = NULL
-                    )
-                )
-            }
+            if (input[["modal_flag"]]) show_the_modal()
             produce_report(all_inputs(), settings)
             if (input[["modal_flag"]]) removeModal()
             result <- includeText(session$userData$temp_txt)
@@ -227,15 +197,7 @@ server <- function(input, output, session){
     observeEvent(
         input[["async_sleep"]],
         {
-            if (input[["modal_flag"]]) {
-                showModal(
-                    modalDialog(
-                        "Shiny is busy",
-                        title = "Message",
-                        footer = NULL
-                    )
-                )
-            }
+            if (input[["modal_flag"]]) show_the_modal()
             future_promise({
                 Sys.sleep(10)
             }) %...>% {
@@ -249,15 +211,7 @@ server <- function(input, output, session){
     observeEvent(
         input[["async_alt_sleep"]],
         {
-            if (input[["modal_flag"]]) {
-                showModal(
-                    modalDialog(
-                        "Shiny is busy",
-                        title = "Message",
-                        footer = NULL
-                    )
-                )
-            }
+            if (input[["modal_flag"]]) show_the_modal()
             future_promise({
                 alternative_sleep(10)
             }) %...>% {
@@ -271,15 +225,7 @@ server <- function(input, output, session){
     observeEvent(
         input[["async_est_pi"]],
         {
-            if (input[["modal_flag"]]) {
-                showModal(
-                    modalDialog(
-                        "Shiny is busy",
-                        title = "Message",
-                        footer = NULL
-                    )
-                )
-            }
+            if (input[["modal_flag"]]) show_the_modal()
             future_promise({
                 estimate_pi()
             }, seed = TRUE) %...>% {
@@ -291,15 +237,7 @@ server <- function(input, output, session){
     observeEvent(
         input[["async_f_est_pi"]],
         {
-            if (input[["modal_flag"]]) {
-                showModal(
-                    modalDialog(
-                        "Shiny is busy",
-                        title = "Message",
-                        footer = NULL
-                    )
-                )
-            }
+            if (input[["modal_flag"]]) show_the_modal()
             future_promise({
                 estimate_pi_to_file(session$userData$temp_txt)
             }, seed = TRUE) %...>% {
@@ -307,9 +245,7 @@ server <- function(input, output, session){
                 file_conn <- file(session$userData$temp_txt)
                 pi_msg <- readLines(file_conn)
                 close(file_conn)
-                output[["msg"]] <- renderText(
-                    pi_msg
-                )
+                output[["msg"]] <- renderText(pi_msg)
             }
         }
     )
@@ -317,15 +253,7 @@ server <- function(input, output, session){
         input[["async_ff_est_pi"]],
         {
             settings <- list(filename=session$userData$temp_txt)
-            if (input[["modal_flag"]]) {
-                showModal(
-                    modalDialog(
-                        "Shiny is busy",
-                        title = "Message",
-                        footer = NULL
-                    )
-                )
-            }
+            if (input[["modal_flag"]]) show_the_modal()
             produce_report(all_inputs(), settings, TRUE) %...>% {
                 if (input[["modal_flag"]]) removeModal()
                 result <- includeText(session$userData$temp_txt)
