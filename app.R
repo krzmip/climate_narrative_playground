@@ -31,30 +31,41 @@ estimate_pi <- function(N = 2e6, digits = 4){
     )
 }
 
-estimate_pi_to_file <- function(filename, ...){
+estimate_pi_to_file <- function(filename, free_text="", ...){
     file_conn <- file(filename)
-    writeLines(estimate_pi(...), file_conn)
+    writeLines(
+        paste0(
+            free_text,
+            ".   ",
+            estimate_pi(...)
+        ),
+        file_conn
+    )
     close(file_conn)
     return(invisible(NULL))
 }
 
 produce_report <- function(all_inputs, settings, async = FALSE, sleep = 0) {
-  print(settings)
+  print("Produce report")
   if (async) {
     return(
-      promises::future_promise({
-        produce_report_(all_inputs, settings, sleep)
-      })
+        print("(async)")  
+        promises::future_promise({
+            produce_report_(all_inputs, settings, sleep)
+        })
     )
   } else {
-    produce_report_(all_inputs, settings, sleep)
-    return(invisible(NULL))
+        print("(sync)")
+        produce_report_(all_inputs, settings, sleep)
+        return(invisible(NULL))
   }
 }
 
 produce_report_ <- function(all_inputs, settings, sleep){
+    print("Sleep...")
     Sys.sleep(sleep)
-    estimate_pi_to_file(settings$filename)
+    print("Actual report production")
+    estimate_pi_to_file(settings$filename, all_inputs)
 }
 
 show_the_modal <- function(){
@@ -79,7 +90,6 @@ ui <- function(){
                     h2("Title"),
                     p("This is a simple app to experiment with some shiny features"),
                     hr(),
-                    #actionButton("title_next", "next")
                     uiOutput("title_next_placeholder")
                 )
             ),
@@ -87,23 +97,20 @@ ui <- function(){
                 "main",
                 fluidPage(
                     h2("Main page"),
-                    p("version 0.21"),
+                    p("version 0.3"),
                     fluidRow(
                         checkboxInput("modal_flag", "Show modal message when busy", value = TRUE),
+                        textInput("text_input", "Insert any text"),
                         textOutput("msg")
                     ),
                     h3("Standard calculations"),
                     fluidRow(
-                        actionButton("sleep", "Sys.sleep(10)"),
-                        actionButton("alt_sleep", "alternative sleep for 10s"),
                         actionButton("est_pi", "Estimate pi"),
                         actionButton("f_est_pi", "Estimate pi,  output saved to file"),
                         actionButton("ff_est_pi", "Estimate pi,  wrapped in functions")
                     ),
                     h3("Async calculations"),
                     fluidRow(
-                        actionButton("async_sleep", "Sys.sleep(10)"),
-                        actionButton("async_alt_sleep", "alternative sleep for 10s"),
                         actionButton("async_est_pi", "Estimate pi"),
                         actionButton("async_f_est_pi", "Estimate pi, output saved to file"),
                         actionButton("async_ff_est_pi", "Estimate pi, wrapped in functions")
@@ -126,7 +133,12 @@ server <- function(input, output, session){
         actionButton("title_next", "next")
     })
     all_inputs <- reactive(
-        input[["sleep"]]
+        paste0(
+            "text_input: ",
+            input[["text_input"]],
+            ", modal_flag: ",
+            input[["modal_flag"]]
+        )
     )
     observeEvent(
         input[["title_next"]],
@@ -135,28 +147,6 @@ server <- function(input, output, session){
     observeEvent(
         input[["main_prev"]],
         updateTabsetPanel(inputId = "wizard", selected = "title")
-    )
-    observeEvent(
-        input[["sleep"]],
-        {
-            if (input[["modal_flag"]]) show_the_modal()
-            Sys.sleep(10)
-            if (input[["modal_flag"]]) removeModal()
-            output[["msg"]] <- renderText(
-                "Sys sleep"
-            )
-        }
-    )
-    observeEvent(
-        input[["alt_sleep"]],
-        {
-            if (input[["modal_flag"]]) show_the_modal()
-            alternative_sleep(10)
-            if (input[["modal_flag"]]) removeModal()
-            output[["msg"]] <- renderText(
-                "Alternative sleep"
-            )
-        }
     )
     observeEvent(
         input[["est_pi"]],
@@ -192,34 +182,6 @@ server <- function(input, output, session){
             if (input[["modal_flag"]]) removeModal()
             result <- includeText(session$userData$temp_txt)
             output$msg <- renderText(result)
-        }
-    )
-    observeEvent(
-        input[["async_sleep"]],
-        {
-            if (input[["modal_flag"]]) show_the_modal()
-            future_promise({
-                Sys.sleep(10)
-            }) %...>% {
-                if (input[["modal_flag"]]) removeModal()
-                output[["msg"]] <- renderText(
-                    "Async sys sleep"
-                )
-            }
-        }
-    )
-    observeEvent(
-        input[["async_alt_sleep"]],
-        {
-            if (input[["modal_flag"]]) show_the_modal()
-            future_promise({
-                alternative_sleep(10)
-            }) %...>% {
-                if (input[["modal_flag"]]) removeModal()
-                output[["msg"]] <- renderText(
-                    "Async sys sleep"
-                )
-            }
         }
     )
     observeEvent(
