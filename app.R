@@ -1,13 +1,18 @@
 library(shiny)
 library(future)
 library(promises)
+library(rmarkdown)
 
 alternative_sleep <- function(time) {
   end_time <- Sys.time() + time
+  sum <- 0
+  count <- 0
   while (Sys.time() < end_time) {
     # some time consuming operation, but preferably not much memory consuming
-    rnorm(1)
+    sum <- sum + rnorm(1)
+    count <- count + 1
   }
+  return(sum/count)
 }
 
 estimate_pi <- function(N = 2e6, digits = 4){
@@ -47,25 +52,49 @@ estimate_pi_to_file <- function(filename, free_text="", ...){
 
 produce_report <- function(all_inputs, settings, async = FALSE, sleep = 0) {
   print("Produce report")
-  if (async) {
-    return(
+    if (async) {
         print("(async)")  
-        promises::future_promise({
-            produce_report_(all_inputs, settings, sleep)
-        })
-    )
-  } else {
+        return(
+            promises::future_promise({
+                produce_report_(all_inputs, settings, sleep)
+            })
+        )
+    } else {
         print("(sync)")
         produce_report_(all_inputs, settings, sleep)
         return(invisible(NULL))
-  }
+    }
 }
 
 produce_report_ <- function(all_inputs, settings, sleep){
     print("Sleep...")
     Sys.sleep(sleep)
     print("Actual report production")
-    estimate_pi_to_file(settings$filename, all_inputs)
+    if (settings$action == "pi"){
+        estimate_pi_to_file(settings$output_file, all_inputs)
+    } else {
+        report_contents <- paste(
+            "# Title",
+            "## Subtitle",
+            "some text",
+            "and other text",
+            "## all inputs",
+            all_inputs,
+            sep="\n\n"
+        )
+        file_conn <- file(settings$md_file)
+        writeLines(
+            report_contents,
+            file_conn
+        )
+        close(file_conn)
+        rmarkdown::render(
+            input = settings$md_file,
+            output_file = settings$output_file,
+            output_format = settings$output_format
+        )
+        return(invisible(NULL))
+    }
 }
 
 show_the_modal <- function(){
@@ -97,23 +126,26 @@ ui <- function(){
                 "main",
                 fluidPage(
                     h2("Main page"),
-                    p("version 0.3"),
+                    p("version 0.5"),
                     fluidRow(
                         checkboxInput("modal_flag", "Show modal message when busy", value = TRUE),
                         textInput("text_input", "Insert any text"),
-                        textOutput("msg")
+                        textOutput("msg"),
+                        uiOutput("html_report")
                     ),
                     h3("Standard calculations"),
                     fluidRow(
                         actionButton("est_pi", "Estimate pi"),
                         actionButton("f_est_pi", "Estimate pi,  output saved to file"),
-                        actionButton("ff_est_pi", "Estimate pi,  wrapped in functions")
+                        actionButton("ff_est_pi", "Estimate pi,  wrapped in functions"),
+                        actionButton("pandoc", "Create html document")
                     ),
                     h3("Async calculations"),
                     fluidRow(
                         actionButton("async_est_pi", "Estimate pi"),
                         actionButton("async_f_est_pi", "Estimate pi, output saved to file"),
-                        actionButton("async_ff_est_pi", "Estimate pi, wrapped in functions")
+                        actionButton("async_ff_est_pi", "Estimate pi, wrapped in functions"),
+                        actionButton("async_pandoc", "Create html document")
                     ),
                     hr(),
                     fluidRow(
@@ -129,6 +161,8 @@ server <- function(input, output, session){
     output$status <- renderText("...")
     plan(multisession)
     session$userData$temp_txt <- tempfile(fileext = ".txt")
+    session$userData$temp_md <- tempfile(fileext = ".md")
+    session$userData$temp_html <- tempfile(fileext = ".html")
     output$title_next_placeholder <- renderUI({
         actionButton("title_next", "next")
     })
@@ -176,12 +210,29 @@ server <- function(input, output, session){
     observeEvent(
         input[["ff_est_pi"]],
         {
-            settings <- list(filename=session$userData$temp_txt)
+            settings <- list(output_file=session$userData$temp_txt, action="pi")
             if (input[["modal_flag"]]) show_the_modal()
             produce_report(all_inputs(), settings)
             if (input[["modal_flag"]]) removeModal()
             result <- includeText(session$userData$temp_txt)
             output$msg <- renderText(result)
+        }
+    )
+    observeEvent(
+        input[["pandoc"]],
+        {
+            settings <- list(
+                action="pandoc",
+                output_file=session$userData$temp_html,
+                md_file=session$userData$temp_md,
+                output_format=rmarkdown::html_document(self_contained=FALSE)
+            )
+            if (input[["modal_flag"]]) show_the_modal()
+            produce_report(all_inputs(), settings, FALSE, 10)
+            if (input[["modal_flag"]]) removeModal()
+            result <- includeHTML(session$userData$temp_html)
+            output$html_report <- renderUI(result)
+            output$msg <- renderText("See the HTML below")
         }
     )
     observeEvent(
@@ -214,12 +265,30 @@ server <- function(input, output, session){
     observeEvent(
         input[["async_ff_est_pi"]],
         {
-            settings <- list(filename=session$userData$temp_txt)
+            settings <- list(output_file=session$userData$temp_txt, action="pi")
             if (input[["modal_flag"]]) show_the_modal()
             produce_report(all_inputs(), settings, TRUE) %...>% {
                 if (input[["modal_flag"]]) removeModal()
                 result <- includeText(session$userData$temp_txt)
                 output$msg <- renderText(result)
+            }
+        }
+    )
+    observeEvent(
+        input[["async_pandoc"]],
+        {
+            settings <- list(
+                action="pandoc",
+                output_file=session$userData$temp_html,
+                md_file=session$userData$temp_md,
+                output_format=rmarkdown::html_document(self_contained=FALSE)
+            )
+            if (input[["modal_flag"]]) show_the_modal()
+            produce_report(all_inputs(), settings, TRUE, 10) %...>% {
+                if (input[["modal_flag"]]) removeModal()
+                result <- includeHTML(session$userData$temp_html)
+                output$html_report <- renderUI(result)
+                output$msg <- renderText("See the HTML below")
             }
         }
     )
