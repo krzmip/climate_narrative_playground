@@ -1,0 +1,20 @@
+Package: climate.narrative.playground
+Title: What the Package Does (One Line, Title Case)
+Version: 0.6
+Authors@R: 
+    person(given = "Krzysztof",
+           family = "Opalski",
+           role = c("aut", "cre"),
+           email = "krzysztof.opalski2@aviva.com")
+Description: The only purpose of this app is investigative (to test some features without cluttering the main repo), to be used only by developers.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.0.2
+Depends:
+    shiny
+Imports:
+    promises,
+    future,
+    rmarkdown
