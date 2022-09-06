@@ -17,26 +17,29 @@ ui <- function(){
                 "main",
                 fluidPage(
                     h2("Main page"),
-                    p("version 0.6"),
+                    p("version 0.7"),
+                    h3("Inputs"),
                     fluidRow(
                         checkboxInput("modal_flag", "Show modal message when busy", value = TRUE),
-                        textInput("text_input", "Insert any text"),
-                        textOutput("msg"),
-                        uiOutput("html_report")
+                        checkboxInput("future_debug", "Future debug", value = getOption("future.debug", FALSE)),
+                        textInput("text_input", "Insert any text")
                     ),
                     h3("Standard calculations"),
                     fluidRow(
-                        actionButton("est_pi", "Estimate pi"),
-                        actionButton("f_est_pi", "Estimate pi,  output saved to file"),
-                        actionButton("ff_est_pi", "Estimate pi,  wrapped in functions"),
-                        actionButton("pandoc", "Create html document")
+                        actionButton("sync_est_pi", "Estimate pi,  wrapped in functions"),
+                        actionButton("sync_pandoc", "Create html document")
                     ),
                     h3("Async calculations"),
                     fluidRow(
-                        actionButton("async_est_pi", "Estimate pi"),
-                        actionButton("async_f_est_pi", "Estimate pi, output saved to file"),
-                        actionButton("async_ff_est_pi", "Estimate pi, wrapped in functions"),
-                        actionButton("async_pandoc", "Create html document")
+                        actionButton("async_est_pi", "Estimate pi, wrapped in functions"),
+                        actionButton("async_pandoc", "Create html document"),
+                        actionButton("async_pandoc_null", "Create html document with return NULL")
+                    ),
+                    hr(),
+                    h3("Outputs"),
+                    fluidRow(
+                        tags$pre(tags$code(textOutput("messages"))),
+                        uiOutput("html_report")
                     ),
                     hr(),
                     fluidRow(

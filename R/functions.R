@@ -12,7 +12,7 @@ alternative_sleep <- function(time) {
 }
 
 #' @importFrom stats runif
-estimate_pi <- function(N = 2e6, digits = 4){
+estimate_pi <- function(N = 1e6, digits = 4){
     sum <- 0
     for (i in 1:N){
         x <- stats::runif(1)
