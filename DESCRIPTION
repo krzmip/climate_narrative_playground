@@ -1,6 +1,6 @@
 Package: climate.narrative.playground
 Title: Investigative App for Some Shiny Behaviour
-Version: 0.7
+Version: 0.8
 Authors@R: 
     person(given = "Krzysztof",
            family = "Opalski",

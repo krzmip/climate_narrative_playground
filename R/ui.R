@@ -17,7 +17,7 @@ ui <- function(){
                 "main",
                 fluidPage(
                     h2("Main page"),
-                    p("version 0.7"),
+                    p("version 0.8"),
                     h3("Inputs"),
                     fluidRow(
                         checkboxInput("modal_flag", "Show modal message when busy", value = TRUE),

@@ -1,7 +1,6 @@
 #' @importFrom promises %...>% %...!%
 server <- function(input, output, session){
     output$status <- renderText("...")
-    plan(multisession)
     session$userData$temp_txt <- tempfile(fileext = ".txt")
     session$userData$temp_md <- tempfile(fileext = ".md")
     session$userData$temp_html <- tempfile(fileext = ".html")

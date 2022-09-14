@@ -4,6 +4,10 @@ The only purpose of this app is investigative (to test some features without clu
 
 ## changes and observations 
 
+### version 0.8
+- remove duplicate plan(multisession) from server function
+- export main function run_shiny_app
+
 ### version 0.7
 - reformatted text output box, added timestamps and make it cummulative
 - added variant of async calculations that returns NULL, inspired by https://github.com/rstudio/promises/issues/46
